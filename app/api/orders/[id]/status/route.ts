@@ -4,10 +4,10 @@ import { isValidStatusTransition } from '@/lib/order-status';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const {
       fulfillment_status,
@@ -119,10 +119,10 @@ export async function PATCH(
 // Get order status history
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabase
       .from('order_status_history')

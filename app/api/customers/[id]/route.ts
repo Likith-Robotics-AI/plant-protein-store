@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
 // GET single customer with orders
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get customer
     const { data: customer, error: customerError } = await supabase
@@ -50,10 +50,10 @@ export async function GET(
 // UPDATE customer
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, email, phone } = body;
 
@@ -93,10 +93,10 @@ export async function PATCH(
 // DELETE customer
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Check if customer has orders
     const { data: orders, error: ordersError } = await supabase
