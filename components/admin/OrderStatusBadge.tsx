@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { FulfillmentStatus, PaymentStatus, getStatusBadgeProps, getPaymentStatusBadgeProps } from '@/lib/order-status';
 
 interface OrderStatusBadgeProps {

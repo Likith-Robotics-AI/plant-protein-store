@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
 

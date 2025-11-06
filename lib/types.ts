@@ -80,7 +80,7 @@ export interface Order {
   contact: string; // email or phone
   email?: string;
   phone?: string;
-  products: CartItem[];
+  products: CartItemWithProduct[];
   subtotal: number;
   discount_amount: number;
   discount_code?: string;
