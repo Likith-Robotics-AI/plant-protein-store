@@ -19,7 +19,10 @@
       "Bash(npm run build:*)",
       "Bash(tail:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nFix all TypeScript and build errors for production deployment\n\n- Updated Next.js 15 dynamic route params to use Promises\n- Fixed Supabase type inference issues with @ts-nocheck directives\n- Updated Stripe API version to latest (2025-10-29.clover)\n- Fixed Order type to use CartItemWithProduct instead of CartItem\n- Added dynamic rendering for pages using useSearchParams\n- Wrapped search param usage in Suspense boundaries\n- Added @ts-nocheck to admin pages, API routes, and components with Supabase type issues\n\nBuild now succeeds: All routes compile and generate correctly.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix all TypeScript and build errors for production deployment\n\n- Updated Next.js 15 dynamic route params to use Promises\n- Fixed Supabase type inference issues with @ts-nocheck directives\n- Updated Stripe API version to latest (2025-10-29.clover)\n- Fixed Order type to use CartItemWithProduct instead of CartItem\n- Added dynamic rendering for pages using useSearchParams\n- Wrapped search param usage in Suspense boundaries\n- Added @ts-nocheck to admin pages, API routes, and components with Supabase type issues\n\nBuild now succeeds: All routes compile and generate correctly.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(node scripts/run-migration.js:*)"
     ],
     "deny": [],
     "ask": []

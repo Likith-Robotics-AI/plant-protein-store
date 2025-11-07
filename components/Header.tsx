@@ -3,15 +3,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, User, Heart, Package, LogOut, ChevronDown } from 'lucide-react';
 import { useCart } from '@/lib/cart-context';
 import { useSearch } from '@/lib/search-context';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const { cart } = useCart();
   const { searchQuery, setSearchQuery } = useSearch();
+  const { customer, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -25,6 +30,12 @@ export default function Header() {
   const handleProductsClick = () => {
     // Navigate to products page
     window.location.href = '/products';
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setAccountMenuOpen(false);
+    router.push('/');
   };
 
   return (
@@ -73,6 +84,66 @@ export default function Header() {
             >
               About
             </Link>
+
+            {/* Account Menu - Desktop */}
+            {isAuthenticated && customer ? (
+              <div className="relative">
+                <button
+                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  className="flex items-center gap-2 text-primary-900 font-semibold hover:text-primary-700 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  <span>{customer.name.split(' ')[0]}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${accountMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {accountMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                    <Link
+                      href="/account"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <User className="w-4 h-4 text-gray-600" />
+                      <span className="font-semibold text-gray-900">My Account</span>
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <Package className="w-4 h-4 text-gray-600" />
+                      <span className="font-semibold text-gray-900">Orders</span>
+                    </Link>
+                    <Link
+                      href="/account/wishlist"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <Heart className="w-4 h-4 text-gray-600" />
+                      <span className="font-semibold text-gray-900">Wishlist</span>
+                    </Link>
+                    <div className="border-t border-gray-200 my-2"></div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4 text-red-600" />
+                      <span className="font-semibold text-red-600">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 text-primary-900 font-semibold hover:text-primary-700 transition-colors"
+              >
+                <User className="w-5 h-5" />
+                Login
+              </Link>
+            )}
+
             <Link
               href="/cart"
               className="relative flex items-center gap-2 bg-primary-900 text-yellow-400 px-6 py-2.5 rounded-full font-bold hover:bg-primary-800 transition-all shadow-md hover:shadow-lg"
@@ -148,6 +219,62 @@ export default function Header() {
               >
                 About
               </Link>
+
+              {/* Account Menu - Mobile */}
+              {isAuthenticated && customer ? (
+                <>
+                  <div className="border-t border-primary-900/20 my-2"></div>
+                  <div className="text-xs font-bold text-primary-900/60 uppercase px-2">
+                    {customer.name}
+                  </div>
+                  <Link
+                    href="/account"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-primary-900 font-semibold hover:text-primary-700 transition-colors py-2 flex items-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    My Account
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-primary-900 font-semibold hover:text-primary-700 transition-colors py-2 flex items-center gap-2"
+                  >
+                    <Package className="w-4 h-4" />
+                    Orders
+                  </Link>
+                  <Link
+                    href="/account/wishlist"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-primary-900 font-semibold hover:text-primary-700 transition-colors py-2 flex items-center gap-2"
+                  >
+                    <Heart className="w-4 h-4" />
+                    Wishlist
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="text-red-600 font-semibold hover:text-red-700 transition-colors py-2 flex items-center gap-2 text-left"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="border-t border-primary-900/20 my-2"></div>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-primary-900 font-semibold hover:text-primary-700 transition-colors py-2 flex items-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    Login
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         )}

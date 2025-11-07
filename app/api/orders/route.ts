@@ -141,6 +141,8 @@ export async function GET(request: NextRequest) {
     const orderId = searchParams.get('id');
     const email = searchParams.get('email');
     const phone = searchParams.get('phone');
+    const customerId = searchParams.get('customer_id');
+    const limit = searchParams.get('limit');
 
     if (orderId) {
       // Get specific order by ID
@@ -154,6 +156,28 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(
           { error: 'Order not found' },
           { status: 404 }
+        );
+      }
+
+      return NextResponse.json(data);
+    } else if (customerId) {
+      // Get orders by customer ID
+      let query = supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false });
+
+      if (limit) {
+        query = query.limit(parseInt(limit));
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        return NextResponse.json(
+          { error: 'Failed to fetch orders' },
+          { status: 500 }
         );
       }
 

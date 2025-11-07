@@ -155,6 +155,9 @@ export interface Customer {
   name: string;
   email?: string;
   phone?: string;
+  password_hash?: string;
+  email_verified: boolean;
+  last_login?: string;
   total_orders: number;
   total_spent: number;
   average_order_value: number;
@@ -162,6 +165,50 @@ export interface Customer {
   first_order_date?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface WishlistItem {
+  id: string;
+  customer_id: string;
+  product_id: string;
+  added_at: string;
+  notes?: string;
+  product?: Product; // Populated when fetched with join
+}
+
+export interface CustomerAddress {
+  id: string;
+  customer_id: string;
+  address_type: 'shipping' | 'billing' | 'both';
+  is_default: boolean;
+  full_name: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state?: string;
+  postal_code: string;
+  country: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerSession {
+  id: string;
+  customer_id: string;
+  token_hash: string;
+  expires_at: string;
+  created_at: string;
+  last_activity: string;
+  user_agent?: string;
+  ip_address?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  customer?: Customer;
+  token?: string;
+  error?: string;
 }
 
 export interface OrderStatusHistory {
