@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const supabase = createClient();
 
     const { data: addresses, error } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq('customer_id', customer_id)
       .order('is_default', { ascending: false })
@@ -90,14 +90,14 @@ export async function POST(request: NextRequest) {
     // If this is set as default, unset other default addresses
     if (is_default) {
       await supabase
-        .from('addresses')
+        .from('customer_addresses')
         .update({ is_default: false })
         .eq('customer_id', customer_id);
     }
 
     // Create the address
     const { data: address, error: createError } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .insert({
         customer_id,
         address_type,

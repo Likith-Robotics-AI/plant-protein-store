@@ -13,7 +13,7 @@ export async function GET(
     const supabase = createClient();
 
     const { data: address, error } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .select('*')
       .eq('id', id)
       .single();
@@ -78,7 +78,7 @@ export async function PUT(
 
     // Get the address to find customer_id
     const { data: existingAddress } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .select('customer_id')
       .eq('id', id)
       .single();
@@ -93,14 +93,14 @@ export async function PUT(
     // If this is set as default, unset other default addresses
     if (is_default) {
       await supabase
-        .from('addresses')
+        .from('customer_addresses')
         .update({ is_default: false })
         .eq('customer_id', existingAddress.customer_id);
     }
 
     // Update the address
     const { data: address, error: updateError } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .update({
         address_type,
         is_default: is_default || false,
@@ -150,7 +150,7 @@ export async function DELETE(
     const supabase = createClient();
 
     const { error: deleteError } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .delete()
       .eq('id', id);
 

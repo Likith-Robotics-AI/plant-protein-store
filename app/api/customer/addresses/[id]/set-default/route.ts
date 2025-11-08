@@ -22,13 +22,13 @@ export async function PUT(
 
     // Unset all default addresses for this customer
     await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .update({ is_default: false })
       .eq('customer_id', customer_id);
 
     // Set the specified address as default
     const { data: address, error: updateError } = await supabase
-      .from('addresses')
+      .from('customer_addresses')
       .update({ is_default: true })
       .eq('id', id)
       .eq('customer_id', customer_id)
