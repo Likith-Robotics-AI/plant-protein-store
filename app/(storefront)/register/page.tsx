@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Mail, Lock, Eye, EyeOff, Phone, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+
+const FORM_STORAGE_KEY = 'register_form_draft';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -26,6 +28,35 @@ export default function RegisterPage() {
     hasLowercase: false,
     hasNumber: false,
   });
+
+  // Load saved form data on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setFormData(parsed);
+        // Recalculate password strength if password exists
+        if (parsed.password) {
+          setPasswordStrength({
+            hasLength: parsed.password.length >= 8,
+            hasUppercase: /[A-Z]/.test(parsed.password),
+            hasLowercase: /[a-z]/.test(parsed.password),
+            hasNumber: /[0-9]/.test(parsed.password),
+          });
+        }
+      } catch (e) {
+        console.error('Failed to parse saved form data');
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (formData.name || formData.email || formData.phone) {
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +85,8 @@ export default function RegisterPage() {
       );
 
       if (result.success) {
+        // Clear saved form data on successful registration
+        localStorage.removeItem(FORM_STORAGE_KEY);
         router.push('/account');
       } else {
         setError(result.error || 'Registration failed');
