@@ -14,12 +14,15 @@ export default function LoginPage() {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -28,10 +31,19 @@ export default function LoginPage() {
       if (result.success) {
         router.push('/account');
       } else {
-        setError(result.error || 'Login failed');
+        // Map error to appropriate field
+        const error = result.error || 'Login failed';
+        if (error.toLowerCase().includes('email')) {
+          setFieldErrors({ email: error });
+        } else if (error.toLowerCase().includes('password') || error.toLowerCase().includes('incorrect')) {
+          setFieldErrors({ password: error });
+        } else {
+          // Generic login error - show at password field
+          setFieldErrors({ password: error });
+        }
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setFieldErrors({ password: 'An unexpected error occurred' });
     } finally {
       setLoading(false);
     }
@@ -59,14 +71,6 @@ export default function LoginPage() {
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-bold text-gray-700 mb-2">
@@ -81,10 +85,20 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 transition ${
+                    fieldErrors.email
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-primary-500 focus:border-transparent'
+                  }`}
                   placeholder="you@example.com"
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -101,7 +115,11 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  className={`w-full pl-11 pr-12 py-3 border rounded-lg focus:ring-2 transition ${
+                    fieldErrors.password
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-primary-500 focus:border-transparent'
+                  }`}
                   placeholder="••••••••"
                 />
                 <button
@@ -116,6 +134,12 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password */}

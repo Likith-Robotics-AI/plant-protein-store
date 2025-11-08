@@ -5,7 +5,9 @@ import { hashPassword, validateEmail, validatePassword, validatePhone, generateT
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Registration attempt started');
     const { name, email, password, phone } = await request.json();
+    console.log('Request data:', { name, email, phone: phone ? 'provided' : 'not provided' });
 
     // Validation
     if (!name || !name.trim()) {
@@ -81,8 +83,9 @@ export async function POST(request: NextRequest) {
 
     if (createError || !customer) {
       console.error('Customer creation error:', createError);
+      console.error('Error details:', JSON.stringify(createError, null, 2));
       return NextResponse.json(
-        { success: false, error: 'Failed to create account' },
+        { success: false, error: 'Failed to create account', details: createError?.message || 'Unknown error' },
         { status: 500 }
       );
     }
@@ -110,10 +113,12 @@ export async function POST(request: NextRequest) {
       customer,
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Internal server error', details: error?.message },
       { status: 500 }
     );
   }

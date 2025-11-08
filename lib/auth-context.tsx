@@ -12,6 +12,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshCustomer: () => Promise<void>;
+  updateCustomer: (customer: Customer) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,6 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await checkAuth();
   };
 
+  const updateCustomer = (updatedCustomer: Customer) => {
+    setCustomer(updatedCustomer);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -133,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         refreshCustomer,
+        updateCustomer,
       }}
     >
       {children}

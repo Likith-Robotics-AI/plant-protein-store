@@ -1,16 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
+import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
-import { Tag, Lock, Truck, X, Check, AlertCircle, Gift, Mail, Sparkles } from 'lucide-react';
+import { Tag, Lock, Truck, X, Check, AlertCircle, Gift, Mail, Sparkles, MapPin, Plus } from 'lucide-react';
+
+interface Address {
+  id: string;
+  address_type: 'shipping' | 'billing' | 'both';
+  is_default: boolean;
+  full_name: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state?: string;
+  postal_code: string;
+  country: string;
+  phone?: string;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, total } = useCart();
+  const { customer, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+
+  // Address management
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [useNewAddress, setUseNewAddress] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(true); // For logged-in users
 
   // Form data
   const [formData, setFormData] = useState({
@@ -52,6 +74,68 @@ export default function CheckoutPage() {
   const bulkDiscount = subtotal - total;
   const discountCodeAmount = appliedDiscount?.amount || 0;
   const finalTotal = Math.max(total - discountCodeAmount, 0);
+
+  // Fetch saved addresses for logged-in users
+  useEffect(() => {
+    if (isAuthenticated && customer) {
+      fetchSavedAddresses();
+      // Pre-fill name and email from customer
+      setFormData(prev => ({
+        ...prev,
+        name: customer.name || '',
+        email: customer.email || '',
+        mobile: customer.phone || '',
+      }));
+    }
+  }, [isAuthenticated, customer]);
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const response = await fetch(`/api/customer/addresses?customer_id=${customer?.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const addresses = data.addresses || [];
+        setSavedAddresses(addresses);
+
+        // Auto-select default address if exists
+        const defaultAddress = addresses.find((addr: Address) => addr.is_default);
+        if (defaultAddress) {
+          setSelectedAddress(defaultAddress.id);
+          populateFormFromAddress(defaultAddress);
+        } else if (addresses.length > 0) {
+          // If no default, select first address
+          setSelectedAddress(addresses[0].id);
+          populateFormFromAddress(addresses[0]);
+        } else {
+          // No saved addresses, use new address form
+          setUseNewAddress(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch addresses:', error);
+      setUseNewAddress(true);
+    }
+  };
+
+  const populateFormFromAddress = (address: Address) => {
+    setFormData(prev => ({
+      ...prev,
+      address: address.address_line1 + (address.address_line2 ? ', ' + address.address_line2 : ''),
+      city: address.city,
+      zipCode: address.postal_code,
+      country: address.country,
+      mobile: address.phone || prev.mobile,
+    }));
+  };
+
+  const handleAddressSelect = (addressId: string) => {
+    setSelectedAddress(addressId);
+    const address = savedAddresses.find(addr => addr.id === addressId);
+    if (address) {
+      populateFormFromAddress(address);
+      setUseNewAddress(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -180,9 +264,14 @@ export default function CheckoutPage() {
     } else if (currentStep === 2) {
       if (!validateStep2()) return;
 
-      // Send discount code email
       setLoading(true);
       try {
+        // Save address if logged in and saveAddress is checked and using new address
+        if (isAuthenticated && customer && useNewAddress && saveAddress) {
+          await saveNewAddress();
+        }
+
+        // Send discount code email
         const response = await fetch('/api/send-discount-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -207,6 +296,35 @@ export default function CheckoutPage() {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const saveNewAddress = async () => {
+    try {
+      // Split address line if it contains comma
+      const addressParts = formData.address.split(',').map(part => part.trim());
+      const address_line1 = addressParts[0] || formData.address;
+      const address_line2 = addressParts.length > 1 ? addressParts.slice(1).join(', ') : '';
+
+      await fetch('/api/customer/addresses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: customer?.id,
+          address_type: 'shipping',
+          is_default: savedAddresses.length === 0, // Set as default if it's the first address
+          full_name: formData.name,
+          address_line1,
+          address_line2: address_line2 || null,
+          city: formData.city,
+          postal_code: formData.zipCode,
+          country: formData.country,
+          phone: formData.mobile || null,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to save address:', error);
+      // Don't block checkout if address save fails
     }
   };
 
@@ -387,7 +505,59 @@ export default function CheckoutPage() {
                       Shipping Address
                     </h3>
 
-                    <div className="space-y-4">
+                    {/* Saved Addresses - For logged-in users */}
+                    {isAuthenticated && savedAddresses.length > 0 && !useNewAddress && (
+                      <div className="space-y-3 mb-4">
+                        <p className="text-sm font-semibold text-gray-700">Select a saved address:</p>
+                        {savedAddresses.map((address) => (
+                          <div
+                            key={address.id}
+                            onClick={() => handleAddressSelect(address.id)}
+                            className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                              selectedAddress === address.id
+                                ? 'border-primary-600 bg-primary-50'
+                                : 'border-gray-200 hover:border-primary-300'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <MapPin className="w-4 h-4 text-primary-600" />
+                                  <span className="font-bold text-gray-900">{address.full_name}</span>
+                                  {address.is_default && (
+                                    <span className="text-xs font-bold bg-primary-600 text-white px-2 py-0.5 rounded">
+                                      DEFAULT
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700">{address.address_line1}</p>
+                                {address.address_line2 && (
+                                  <p className="text-sm text-gray-700">{address.address_line2}</p>
+                                )}
+                                <p className="text-sm text-gray-700">
+                                  {address.city}, {address.postal_code}
+                                </p>
+                                <p className="text-sm text-gray-700">{address.country}</p>
+                              </div>
+                              {selectedAddress === address.id && (
+                                <Check className="w-5 h-5 text-primary-600" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setUseNewAddress(true)}
+                          className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 text-gray-600 py-3 rounded-lg hover:border-primary-400 hover:text-primary-600 transition font-semibold"
+                        >
+                          <Plus className="w-5 h-5" />
+                          Use a different address
+                        </button>
+                      </div>
+                    )}
+
+                    {/* New Address Form - For guests or when adding new address */}
+                    {(!isAuthenticated || savedAddresses.length === 0 || useNewAddress) && (
+                      <div className="space-y-4">
                       {/* Address Field */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -473,7 +643,41 @@ export default function CheckoutPage() {
                           <option value="Ireland">Ireland</option>
                         </select>
                       </div>
+
+                      {/* Save Address Checkbox - For logged-in users using new address */}
+                      {isAuthenticated && useNewAddress && (
+                        <div className="flex items-center bg-primary-50 border border-primary-200 rounded-lg p-3">
+                          <input
+                            type="checkbox"
+                            id="saveAddress"
+                            checked={saveAddress}
+                            onChange={(e) => setSaveAddress(e.target.checked)}
+                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                          <label htmlFor="saveAddress" className="ml-2 text-sm text-gray-700">
+                            Save this address for future orders
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Back to Saved Addresses Button */}
+                      {isAuthenticated && savedAddresses.length > 0 && useNewAddress && (
+                        <button
+                          onClick={() => {
+                            setUseNewAddress(false);
+                            if (savedAddresses.length > 0) {
+                              const defaultAddr = savedAddresses.find(a => a.is_default) || savedAddresses[0];
+                              setSelectedAddress(defaultAddr.id);
+                              populateFormFromAddress(defaultAddr);
+                            }
+                          }}
+                          className="w-full text-sm text-primary-600 hover:text-primary-700 font-semibold"
+                        >
+                          ← Back to saved addresses
+                        </button>
+                      )}
                     </div>
+                    )}
                   </div>
 
                   <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 flex items-start gap-3">
